@@ -1,0 +1,81 @@
+import React, { useState, useCallback } from 'react';
+import { AdInputForm } from './components/AdInputForm';
+import { OptimizationResult } from './components/OptimizationResult';
+import { Header } from './components/Header';
+import { optimizeAd } from './services/geminiService';
+import type { AdContent, OptimizedAdResult, AdInput } from './types';
+
+const App: React.FC = () => {
+  const [originalAd, setOriginalAd] = useState<AdContent | null>(null);
+  const [optimizedAd, setOptimizedAd] = useState<OptimizedAdResult | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleOptimize = useCallback(async (input: AdInput, tone: string) => {
+    setIsLoading(true);
+    setError(null);
+    setOptimizedAd(null);
+    setOriginalAd(null);
+
+    try {
+      const result = await optimizeAd(input, tone);
+      setOriginalAd({
+        title: result.title,
+        description: result.description,
+      });
+      setOptimizedAd({
+        optimizedTitle: result.optimizedTitle,
+        optimizedDescription: result.optimizedDescription,
+        suggestions: result.suggestions,
+        keywords: result.keywords,
+      });
+    } catch (e: unknown) {
+      console.error(e);
+      const errorMessage = e instanceof Error ? e.message : 'Ocorreu um erro desconhecido.';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleReset = useCallback(() => {
+      setOriginalAd(null);
+      setOptimizedAd(null);
+      setError(null);
+      setIsLoading(false);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-800 font-sans">
+      <Header />
+      <main className="container mx-auto px-4 py-8 md:py-16">
+        <div className="max-w-4xl mx-auto">
+            {isLoading || error || optimizedAd ? (
+            <OptimizationResult
+                originalAd={originalAd}
+                optimizedAd={optimizedAd}
+                isLoading={isLoading}
+                error={error}
+                onReset={handleReset}
+            />
+            ) : (
+            <div className="max-w-3xl mx-auto text-center">
+                <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight">
+                    Crie Conteúdo de{' '}
+                    <span className="text-violet-600">Marketing em Segundos</span>
+                </h1>
+                <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+                Faça upload de uma imagem ou cole um link de produto. Nossa IA analisará e gerará textos de alta conversão para todas as suas necessidades.
+                </p>
+                <div className="mt-10">
+                    <AdInputForm onOptimize={handleOptimize} isLoading={isLoading} />
+                </div>
+            </div>
+            )}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default App;
