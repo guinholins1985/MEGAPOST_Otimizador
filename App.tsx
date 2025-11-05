@@ -5,6 +5,17 @@ import { Header } from './components/Header';
 import { optimizeAd } from './services/geminiService';
 import type { AdContent, OptimizedAdResult, AdInput } from './types';
 
+const Footer: React.FC = () => {
+  return (
+    <footer className="bg-gray-100 border-t border-gray-200">
+      <div className="container mx-auto px-4 py-6 text-center text-gray-500">
+        <p className="text-sm">&copy; {new Date().getFullYear()} MEGAPOST. Todos os direitos reservados.</p>
+        <p className="text-xs mt-1">Potencializado por IA para otimizar seus anúncios.</p>
+      </div>
+    </footer>
+  );
+};
+
 const App: React.FC = () => {
   const [originalAd, setOriginalAd] = useState<AdContent | null>(null);
   const [optimizedAd, setOptimizedAd] = useState<OptimizedAdResult | null>(null);
@@ -46,9 +57,9 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800 font-sans">
+    <div className="min-h-screen bg-gray-50 text-gray-800 font-sans flex flex-col">
       <Header />
-      <main className="container mx-auto px-4 py-8 md:py-16">
+      <main className="container mx-auto px-4 py-8 md:py-16 flex-grow">
         <div className="max-w-4xl mx-auto">
             {isLoading || error || optimizedAd ? (
             <OptimizationResult
@@ -74,6 +85,7 @@ const App: React.FC = () => {
             )}
         </div>
       </main>
+      <Footer />
     </div>
   );
 };
