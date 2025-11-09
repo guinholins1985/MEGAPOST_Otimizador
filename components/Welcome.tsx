@@ -10,11 +10,13 @@ const RocketIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 export const Welcome: React.FC = () => {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center bg-gray-800/50 border border-dashed border-gray-700 rounded-xl p-8">
-      <RocketIcon className="w-16 h-16 text-cyan-400 mb-4" />
-      <h2 className="text-2xl font-bold text-white mb-2">Pronto para Vender Mais?</h2>
-      <p className="max-w-md text-gray-400">
-        Cole a URL do seu anúncio ao lado e deixe nossa Inteligência Artificial criar uma versão irresistível que converte visitantes em compradores.
+    <div className="flex flex-col items-start justify-center h-full text-left bg-violet-50 border border-violet-200 rounded-xl p-8">
+      <div className="bg-white p-3 rounded-full shadow-md mb-4 border border-violet-100">
+        <RocketIcon className="w-8 h-8 text-violet-600" />
+      </div>
+      <h2 className="text-2xl font-bold text-gray-800 mb-2">Pronto para Vender Mais?</h2>
+      <p className="text-gray-600">
+        Use o formulário ao lado para começar. Envie a imagem de um produto ou o link de um anúncio existente e deixe nossa IA criar uma versão otimizada que converte.
       </p>
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { AdInputForm } from './components/AdInputForm';
 import { OptimizationResult } from './components/OptimizationResult';
 import { Header } from './components/Header';
+import { Welcome } from './components/Welcome';
 import { optimizeAd } from './services/geminiService';
 import type { AdContent, OptimizedAdResult, AdInput } from './types';
 
@@ -60,26 +61,34 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-gray-50 text-gray-800 font-sans flex flex-col">
       <Header />
       <main className="container mx-auto px-4 py-8 md:py-16 flex-grow">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-7xl mx-auto">
             {isLoading || error || optimizedAd ? (
-            <OptimizationResult
-                originalAd={originalAd}
-                optimizedAd={optimizedAd}
-                isLoading={isLoading}
-                error={error}
-                onReset={handleReset}
-            />
+            <div className="max-w-4xl mx-auto">
+                <OptimizationResult
+                    originalAd={originalAd}
+                    optimizedAd={optimizedAd}
+                    isLoading={isLoading}
+                    error={error}
+                    onReset={handleReset}
+                />
+            </div>
             ) : (
-            <div className="max-w-3xl mx-auto text-center">
-                <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight">
-                    Crie Conteúdo de{' '}
-                    <span className="text-violet-600">Marketing em Segundos</span>
-                </h1>
-                <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-                Faça upload de uma imagem ou cole um link de produto. Nossa IA analisará e gerará textos de alta conversão para todas as suas necessidades.
-                </p>
-                <div className="mt-10">
+            <div>
+                <div className="max-w-3xl mx-auto text-center">
+                    <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight">
+                        Crie Conteúdo de{' '}
+                        <span className="text-violet-600">Marketing em Segundos</span>
+                    </h1>
+                    <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+                    Faça upload de uma imagem ou cole um link de produto. Nossa IA analisará e gerará textos de alta conversão para todas as suas necessidades.
+                    </p>
+                </div>
+
+                <div className="mt-12 grid md:grid-cols-2 items-start gap-12 max-w-5xl mx-auto">
                     <AdInputForm onOptimize={handleOptimize} isLoading={isLoading} />
+                    <div className="hidden md:flex h-full">
+                        <Welcome />
+                    </div>
                 </div>
             </div>
             )}
