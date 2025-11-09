@@ -1,8 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { FullOptimizationResult, AdInput } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-
 const fileToGenerativePart = async (file: File) => {
     const base64EncodedDataPromise = new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -48,6 +46,7 @@ const parseJsonResponse = (responseText: string): any => {
 }
 
 export const optimizeAd = async (input: AdInput, tone: string): Promise<FullOptimizationResult> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
     const model = "gemini-2.5-flash";
 
     try {
