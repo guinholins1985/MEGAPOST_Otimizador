@@ -21,45 +21,54 @@ const fileToGenerativePart = async (file: File) => {
     };
 };
 
+// Helper to robustly parse JSON from AI response, handling markdown wrappers.
+const parseJsonResponse = (responseText: string): FullOptimizationResult => {
+    // First, try to find a JSON block wrapped in markdown ```json ... ```
+    const markdownMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+    if (markdownMatch && markdownMatch[1]) {
+        try {
+            return JSON.parse(markdownMatch[1]);
+        } catch (e) {
+            console.warn("Could not parse JSON from markdown block, falling back.", e);
+        }
+    }
+
+    // If no markdown, or if parsing failed, find the main JSON object inside the text
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (jsonMatch && jsonMatch[0]) {
+        try {
+            return JSON.parse(jsonMatch[0]);
+        } catch (e) {
+            console.error("Failed to parse extracted JSON from response:", jsonMatch[0], e);
+        }
+    }
+    
+    // If all else fails, throw an error.
+    console.error("Response is not valid JSON and no JSON block could be extracted.", responseText);
+    throw new Error("A IA não retornou um JSON válido. Tente novamente.");
+}
+
+
 export const optimizeAd = async (input: AdInput, tone: string): Promise<FullOptimizationResult> => {
   const model = "gemini-2.5-flash";
 
   try {
     if (input.type === 'url') {
         const contents = `
-        Sua tarefa é atuar como um especialista em marketing digital e otimização de anúncios para marketplaces. Você recebeu a URL de um anúncio e um tom de voz específico.
+        Sua tarefa é atuar como um especialista em marketing digital. Analise a página do produto na URL fornecida e use um tom de voz "${tone}".
 
-        URL do Anúncio: "${input.value}"
-        Tom de Voz a ser aplicado: "${tone}"
+        URL: "${input.value}"
 
-        Siga estritamente as seguintes instruções:
-        1. Acesse e analise o conteúdo da página no URL fornecido para entender o produto.
-        2. Extraia o título e a descrição originais do anúncio. Se não houver descrição, resuma os pontos principais do produto em 2-3 frases.
-        3. Reescreva o título para ser mais vendedor e otimizado para buscas (SEO), aplicando o tom de voz solicitado.
-        4. Reescreva a descrição para ser mais persuasiva, aplicando o tom de voz solicitado. Destaque benefícios, use parágrafos curtos e/ou bullet points.
-        5. Forneça 3 sugestões práticas e acionáveis para melhorar o anúncio (fotos, preço, confiança).
-        6. Identifique e extraia de 5 a 7 palavras-chave (SEO) cruciais para este produto, que potenciais compradores usariam para encontrá-lo.
-        7. Retorne SUA RESPOSTA CONTENDO APENAS E SOMENTE o objeto JSON com a seguinte estrutura. NÃO inclua nenhum texto, explicação ou formatação de markdown como \`\`\`json. Sua resposta deve começar com '{' e terminar com '}'.
+        Siga estas instruções:
+        1.  Acesse e analise o conteúdo da URL para entender o produto.
+        2.  Extraia o título e a descrição originais. Se não houver descrição, crie um resumo.
+        3.  Crie um "optimizedTitle" que seja vendedor e otimizado para SEO.
+        4.  Crie uma "optimizedDescription" que seja persuasiva, destacando benefícios.
+        5.  Forneça 3 "suggestions" (sugestões) práticas para melhorar o anúncio (fotos, preço, etc.).
+        6.  Liste de 5 a 7 "keywords" (palavras-chave) de SEO.
+        7.  Retorne SUA RESPOSTA CONTENDO APENAS E SOMENTE o objeto JSON com a estrutura: { "title": "...", "description": "...", "optimizedTitle": "...", "optimizedDescription": "...", "suggestions": [...], "keywords": [...] }.
+            Sua resposta DEVE começar com '{' e terminar com '}'. Não inclua nenhum texto ou formatação de markdown.`;
 
-        Estrutura JSON esperada:
-        {
-        "title": "O título original do anúncio.",
-        "description": "A descrição original do anúncio.",
-        "optimizedTitle": "O novo título otimizado com o tom de voz aplicado.",
-        "optimizedDescription": "A nova descrição persuasiva e bem formatada com o tom de voz aplicado.",
-        "suggestions": [
-            "Uma sugestão de melhoria.",
-            "Outra sugestão de melhoria.",
-            "Mais uma sugestão de melhoria."
-        ],
-        "keywords": [
-            "primeira palavra-chave",
-            "segunda palavra-chave",
-            "terceira palavra-chave",
-            "etc..."
-        ]
-        }
-    `;
         const config = { tools: [{googleSearch: {}}] };
         const response = await ai.models.generateContent({
             model,
@@ -67,32 +76,17 @@ export const optimizeAd = async (input: AdInput, tone: string): Promise<FullOpti
             config,
         });
 
-        const text = response.text;
-        
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            console.error("Resposta da IA não contém um objeto JSON:", text);
-            throw new Error("A IA não retornou um JSON válido. Tente novamente.");
-        }
-        
-        const jsonText = jsonMatch[0];
-        return JSON.parse(jsonText);
+        return parseJsonResponse(response.text);
 
     } else { // type: 'image'
         const imagePart = await fileToGenerativePart(input.value);
-        const textPart = { text: `
-Sua tarefa é atuar como um especialista em marketing digital, analisando a imagem de um produto para criar um anúncio otimizado.
+        const textPart = { text: `Você é um especialista em marketing que cria conteúdo para anúncios. Analise a imagem do produto.
 
-Tom de Voz a ser aplicado: "${tone}"
-
-Com base na imagem, gere o seguinte conteúdo:
-1.  **Título Original**: Um título curto e direto que descreva o produto.
-2.  **Descrição Original**: Uma descrição objetiva do produto em 2-3 frases.
-3.  **Título Otimizado**: Um novo título vendedor, otimizado para SEO, aplicando o tom de voz solicitado.
-4.  **Descrição Otimizada**: Uma nova descrição persuasiva, com o tom de voz solicitado, destacando benefícios em parágrafos curtos ou bullet points.
-5.  **Sugestões**: 3 sugestões práticas para melhorar o anúncio (fotos, preço, etc.).
-6.  **Palavras-chave**: 5 a 7 palavras-chave (SEO) cruciais para este produto.
-`};
+        Aplique um tom de voz "${tone}" e gere o seguinte conteúdo, retornando-o estritamente no formato JSON definido:
+        - title & description: Crie um título e descrição curtos e objetivos.
+        - optimizedTitle & optimizedDescription: Crie versões otimizadas para SEO e persuasivas.
+        - suggestions: Forneça 3 sugestões práticas para melhorar o anúncio.
+        - keywords: Liste de 5 a 7 palavras-chave de SEO.`};
         const contents = { parts: [imagePart, textPart] };
         const config = {
             responseMimeType: "application/json",
